@@ -10,8 +10,8 @@ require("./models/User");
 mongoose.Promise = global.Promise;
 mongoose.connect(keys.mongoURI);
 
-const Trail = mongoose.model("Trails");
-const User = mongoose.model("Users");
+// const Trail = mongoose.model("Trails");
+// const User = mongoose.model("Users");
 
 const app = express();
 
@@ -21,7 +21,7 @@ app.use(passport.session());
 
 //require("./routes/trailRoutes");
 
-// async function testing(){
+// async function testing_user(){
 //     await new User({
 //         paritionKey: "PEOPLE",
 //         username: "username",
@@ -31,17 +31,28 @@ app.use(passport.session());
 //         weight: "123",
 //         gender: "m",
 //         target_weight: "132",
-//     });
+//     }).save();
 // }
 
-//testing();
+// testing_user();
 
-app.get("/api/get_users", async (req, res) => {
-    const users = await User.find({});
-    res.send(users);
-})
+// async function testing_trail(){
+//     await new Trail({
+//         name: "trail",
+//         difficulty: "hard",
+//         rating: "some rating",
+//         latitude: 123,
+//         longitude: 321,
+//         length: 12345,
+//         ttc: "some ttc",
+//         partitionKey: "TRAILS",
+//     }).save();
+// }
 
-require("./routes/userRoutes");
+// testing_trail();
+
+require("./routes/userRoutes")(app);
+require("./routes/trailRoutes")(app);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT);

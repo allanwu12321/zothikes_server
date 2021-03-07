@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const userSchema = new Schema({
     partitionKey: String,
     username: String,
-    name: { lastName: String, firstName: String },
+    name: String,
     age: Number,
     height: Number,
     weight: Number,
