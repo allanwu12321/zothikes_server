@@ -10,6 +10,6 @@ const userSchema = new Schema({
     weight: Number,
     gender: String,
     target_weight: Number,
-});
+}, {collection: "Users"});
 
 mongoose.model("Users", userSchema);

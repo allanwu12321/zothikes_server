@@ -10,6 +10,6 @@ const trailSchema = new Schema({
     length: String,
     ttc: String,
     partitionKey: String,
-});
+}, {collection: "Trails"});
 
 mongoose.model("Trails", trailSchema);
