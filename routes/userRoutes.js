@@ -9,19 +9,19 @@ module.exports = (app) => {
     })
 
     app.post("/api/post_user", async(req, res) => {
-        const { username, name /*whatever other user fields*/ } = req.body;
+        const { name, email, age, height, weight, gender, target_weight /*whatever other user fields*/ } = req.body;
         //see if there is a user with the same name or something
-        var user = await User.findOne({ name: "allan" });
+        var user = await User.findOne({ email: email });
         if(!user){
             await new User({
                 partitionKey: "PEOPLE",
-                name: "allan",
-                username: "allan123",
-                age: 21,
-                height: 70,
-                weight: 321,
-                gender: "male",
-                target_weight: 300,
+                name: name,
+                email: email,
+                age: age,
+                height: height,
+                weight: weight,
+                gender: gender,
+                target_weight: target_weight,
             }).save();
         }
     })

@@ -22,7 +22,7 @@ function calculateClosestTrail(lat1, long1, lat2, long2) {
 function calculateBmi(weight, height) {
     if (weight != null && height != null) {
         const bmi = (parseFloat(weight) / (parseFloat(height) ** 2)) * 703.0
-        console.log(bmi);
+        // console.log(bmi);
         let bmi_result;
         if (bmi < 18.5) {
             bmi_result = "Underweight";
@@ -38,56 +38,71 @@ function calculateBmi(weight, height) {
     return "Error: Please enter a weight and height";
 }
 
-async function calculateRecommendation() {
-    const trails = await Trail.find({}, function(err, elements) {
-        let closest_distance = 9999999;
-        // let closest_trail_name;
-        let trail_distances = [];
-        let trail_scores = [];
-        let difficulty_multiplier = 0.0;
-        elements.forEach(trail => {
-            if (trail.difficulty.localeCompare("easy") == 0) {
-                // TODO balance difficulty multiplier
-                difficulty_multiplier = 3.0;
-            } else if (trail.difficulty.localeCompare("moderate") == 0) {
-                difficulty_multiplier = 2.0;
-            } else {
-                difficulty_multiplier = 1.0;
-            }
-            let current_distance = calculateClosestTrail(trail.latitude, trail.longitude, 37.422017, -122.0840703);
-            trail_distances.push(current_distance);
-            trail_scores.push((parseFloat(trail.rating.split(" ")[0])/5.0) * 0.3 + difficulty_multiplier/3.0 * 0.2);
-            if (current_distance < closest_distance) {
-                closest_distance = current_distance;
-                // closest_trail_name = trail.name;
-            }
-            console.log(calculateClosestTrail(trail.latitude, trail.longitude, 37.422017, -122.0840703), trail.name, trail.rating, (parseFloat(trail.rating.split(" ")[0])/5.0), trail.difficulty);
-        });
-        console.log(trail_scores);
-        for (let i = 0; i < elements.length; i++) {
-            trail_scores[i] += 1/(trail_distances[i] / closest_distance) * 0.5;
-            
+function calculateRec(trails) {
+    let closest_distance = 9999999;
+    let trail_distances = [];
+    let trail_scores = [];
+
+    trails.forEach(trail => {
+        // Calculate the distance between each trail and user's current location
+        let current_distance = calculateClosestTrail(trail.latitude, trail.longitude, 37.422017, -122.0840703);
+        trail_distances.push(current_distance);
+        trail_scores.push((parseFloat(trail.rating.split(" ")[0])/5.0) * 0.3); // Give each trail a score based on its rating
+        if (current_distance < closest_distance) {
+            closest_distance = current_distance;
         }
-        // console.log(elements[trail_distances.indexOf(closest_distance)].name);
-        console.log(trail_distances);
-        console.log(trail_scores);
-        console.log(elements[trail_scores.indexOf(Math.max(...trail_scores))]);
-    });
+        console.log(calculateClosestTrail(trail.latitude, trail.longitude, 37.422017, -122.0840703), trail.name, trail.rating, (parseFloat(trail.rating.split(" ")[0])/5.0), trail.difficulty);
+    })
+
+    console.log(trail_scores);
+    for (let i = 0; i < trails.length; i++) {
+        trail_scores[i] += 1/(trail_distances[i] / closest_distance) * 0.5; // Add to each trail's score based on distance
+        
+    }
+
+    console.log(trail_distances);
+    console.log(trail_scores);
+    console.log(trails[trail_scores.indexOf(Math.max(...trail_scores))]);
+    return trails[trail_scores.indexOf(Math.max(...trail_scores))].name;
 }
 
 module.exports = (app) => {
     app.get("/api/get_recommendation", async (req, res) => {
-        const users = await User.find({}, function(err, elements) {
-            elements.forEach(user => {
-                console.log(calculateBmi(user.weight, user.height));
-                calculateRecommendation();
-            });
-        });
-        console.log(users);
+        const { email, } = req.body;
+        const user = await User.findOne({email: email}); //Data about user is stored here
+        if (user){
+            current_user_bmi = calculateBmi(user.weight, user.height);
+            if (current_user_bmi.localeCompare("Obesity") == 0 || current_user_bmi.localeCompare("Underweight") == 0) {
+                const trails = await Trail.find({difficulty: "easy"});
+                console.log(trails);
+                console.log(trails.length);
+                // console.log(calculateRec(trails));
+                res.send(calculateRec(trails))
+            } else {
+                const trails = await Trail.find({});
+                console.log(trails);
+                console.log(trails.length);
+                res.send(calculateRec(trails))
+            }
+            
+            console.log(current_user_bmi);
+            console.log(user.name);
+        }
+        else {
+            res.send("Error: Can't find user");
+        }
+        
+        // const users = await User.find({}, function(err, elements) {
+        //     elements.forEach(user => {
+        //         console.log(calculateBmi(user.weight, user.height));
+        //         // calculateRecommendation();
+        //     });
+        // });
+        // console.log(users);
 
         // console.log(trails);
         
-        res.send(calculateBmi(users[0].weight, users[0].height));
+        // res.send(calculateBmi(users[0].weight, users[0].height));
         // calculateRecommendation();
         // res.write(users);
         // res.send(users);

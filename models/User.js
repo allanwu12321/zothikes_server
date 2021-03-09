@@ -3,13 +3,13 @@ const { Schema } = mongoose;
 
 const userSchema = new Schema({
     partitionKey: String,
-    username: String,
+    email: String,
     name: String,
-    age: Number,
-    height: Number,
-    weight: Number,
+    age: String,
+    height: String,
+    weight: String,
     gender: String,
-    target_weight: Number,
+    target_weight: String,
 }, {collection: "Users"});
 
 mongoose.model("Users", userSchema);
