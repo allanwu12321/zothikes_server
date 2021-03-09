@@ -9,7 +9,7 @@ module.exports = (app) => {
     })
 
     app.post("/api/post_user", async(req, res) => {
-        const { name, email, age, height, weight, gender, target_weight /*whatever other user fields*/ } = req.body;
+        const { name, email, age, height, weight, gender, target_weight, latitude, longitude /*whatever other user fields*/ } = req.body;
         //see if there is a user with the same name or something
         var user = await User.findOne({ email: email });
         if(!user){
@@ -22,6 +22,8 @@ module.exports = (app) => {
                 weight: weight,
                 gender: gender,
                 target_weight: target_weight,
+                latitude: latitude,
+                longitude: longitude
             }).save();
         }
     })
