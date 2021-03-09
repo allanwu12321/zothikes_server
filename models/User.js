@@ -10,6 +10,8 @@ const userSchema = new Schema({
     weight: String,
     gender: String,
     target_weight: String,
+    latitude: String,
+    longitude: String,
 }, {collection: "Users"});
 
 mongoose.model("Users", userSchema);

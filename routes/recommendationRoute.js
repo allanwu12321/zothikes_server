@@ -68,8 +68,10 @@ function calculateRec(trails) {
 
 module.exports = (app) => {
     app.get("/api/get_recommendation", async (req, res) => {
-        const { email, } = req.body;
-        const user = await User.findOne({email: email}); //Data about user is stored here
+        const { email, latitude, longitude } = req.body;
+        const user = await User.findOne({email: email});
+        user.latitude = latitude;
+        user.longitude = longitude; //Data about user is stored here
         if (user){
             current_user_bmi = calculateBmi(user.weight, user.height);
             if (current_user_bmi.localeCompare("Obesity") == 0 || current_user_bmi.localeCompare("Underweight") == 0) {
@@ -84,9 +86,10 @@ module.exports = (app) => {
                 console.log(trails.length);
                 res.send(calculateRec(trails))
             }
-            
+            await user.save();
             console.log(current_user_bmi);
             console.log(user.name);
+
         }
         else {
             res.send("Error: Can't find user");
