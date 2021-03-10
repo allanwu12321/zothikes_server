@@ -43,14 +43,14 @@ function calculateRec(trails, num_of_results, latitude, longitude) {
     let trail_dict = {};
     let trail_distances = [];
     let trail_scores = [];
-    let top_trails = [];
+    // let top_trails = [];
 
     trails.forEach(trail => {
         // Calculate the distance between each trail and user's current location
         let current_distance = calculateClosestTrail(trail.latitude, trail.longitude, latitude, longitude);
         trail_distances.push(current_distance);
-        // trail_scores.push((parseFloat(trail.rating.split(" ")[0])/5.0) * 0.3); 
-        trail_dict[trail.name] = (parseFloat(trail.rating.split(" ")[0])/5.0) * 0.3; // Give each trail a score based on its rating
+        // trail_scores.push((parseFloat(trail.rating.split(" ")[0])/5.0) * 0.3);
+        trail_dict[trail.name] = {"score": (parseFloat(trail.rating.split(" ")[0])/5.0) * 0.3, "latitude": trail.latitude, "longitude": trail.longitude}; // Give each trail a score based on its rating
         if (current_distance < closest_distance) {
             closest_distance = current_distance;
         }
@@ -59,7 +59,7 @@ function calculateRec(trails, num_of_results, latitude, longitude) {
 
     let index = 0;
     Object.keys(trail_dict).forEach(function(key) {
-        trail_dict[key] += 1/(trail_distances[index++] / closest_distance) * 0.5;
+        trail_dict[key].score += 1/(trail_distances[index++] / closest_distance) * 0.5;
     })
 
     // convert dict to array
@@ -69,19 +69,19 @@ function calculateRec(trails, num_of_results, latitude, longitude) {
 
     // sort
     trail_scores.sort(function(item1, item2) {
-        return item2[1] - item1[1];
+        return item2[1].score - item1[1].score;
     })
 
     console.log(trail_distances);
     console.log(trail_scores.slice(0,num_of_results));
     // console.log(trails[trail_scores.indexOf(Math.max(...trail_scores))]);
     // console.log(trail_dict);
-    for (let index = 0; index < num_of_results; index++) {
-        top_trails.push(trail_scores[index][0]);
+    // for (let index = 0; index < num_of_results; index++) {
+    //     top_trails.push(trail_scores[index][0]);
         
-    }
+    // }
 
-    return JSON.stringify(top_trails);
+    return trail_scores.slice(0, num_of_results);
     // return trail_scores.slice(0,5);
     // return trails[trail_scores.indexOf(Math.max(...trail_scores))].name;
 }
@@ -90,7 +90,7 @@ module.exports = (app) => {
     app.post("/api/get_recommendation", async (req, res) => {
         const { email, latitude, longitude } = req.body;
         // console.log(email);
-        const user = await User.findOne({email: email});
+        const user = await User.findOne({email: "jimmyw7@uci.edu"});
         user.latitude = latitude;
         user.longitude = longitude; //Data about user is stored here
         // console.log(user.latitude);
@@ -102,6 +102,7 @@ module.exports = (app) => {
                 // console.log(trails);
                 // console.log(trails.length);
                 // console.log(calculateRec(trails));
+                // 37.4220656 -122.0840897
                 res.send(calculateRec(trails, 5, user.latitude, user.longitude))
             } else {
                 const trails = await Trail.find({});
@@ -117,20 +118,5 @@ module.exports = (app) => {
         else {
             res.send("Error: Can't find user");
         }
-        
-        // const users = await User.find({}, function(err, elements) {
-        //     elements.forEach(user => {
-        //         console.log(calculateBmi(user.weight, user.height));
-        //         // calculateRecommendation();
-        //     });
-        // });
-        // console.log(users);
-
-        // console.log(trails);
-        
-        // res.send(calculateBmi(users[0].weight, users[0].height));
-        // calculateRecommendation();
-        // res.write(users);
-        // res.send(users);
     })
 };
