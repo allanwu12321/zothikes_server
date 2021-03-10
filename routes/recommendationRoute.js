@@ -109,7 +109,7 @@ module.exports = (app) => {
                 // console.log(trails.length);
                 res.send(calculateRec(trails, 5, user.latitude, user.longitude))
             }
-            // await user.save();
+            await user.save();
             console.log(current_user_bmi);
             console.log(user.name);
 

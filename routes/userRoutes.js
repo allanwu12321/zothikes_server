@@ -26,5 +26,13 @@ module.exports = (app) => {
                 longitude: longitude
             }).save();
         }
+        else{
+            user.age = age;
+            user.height = height;
+            user.weight = weight;
+            user.gender = gender;
+            user.target_weight = target_weight;
+            await user.save();
+        }
     })
 };
