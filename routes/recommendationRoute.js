@@ -38,28 +38,45 @@ function calculateBmi(weight, height) {
     return "Error: Please enter a weight and height";
 }
 
-function calculateRec(trails, num_of_results, latitude, longitude) {
+function difficultyMultiplier(difficulty) {
+    if (difficulty.localeCompare("moderate") == 0) {
+        // We want to suggest the "normal" difficulty slightly more often
+        return 0.35 * 0.2;
+    } else if (difficulty.localeCompare("hard") == 0) {
+        return 1/3 * 0.2;
+    } else {
+        // easy difficulty
+        return 0.32 * 0.2;
+    }
+}
+
+function calculateRec(current_user, trails, num_of_results, latitude, longitude) {
     let closest_distance = 9999999;
     let trail_dict = {};
     let trail_distances = [];
     let trail_scores = [];
-    // let top_trails = [];
 
     trails.forEach(trail => {
         // Calculate the distance between each trail and user's current location
         let current_distance = calculateClosestTrail(trail.latitude, trail.longitude, latitude, longitude);
-        trail_distances.push(current_distance);
-        // trail_scores.push((parseFloat(trail.rating.split(" ")[0])/5.0) * 0.3);
-        trail_dict[trail.name] = {"score": (parseFloat(trail.rating.split(" ")[0])/5.0) * 0.3, "latitude": trail.latitude, "longitude": trail.longitude}; // Give each trail a score based on its rating
-        if (current_distance < closest_distance) {
-            closest_distance = current_distance;
+        if (current_distance <= 80467.2) { // limit to 50 mile radius or ~ 1 hour drive
+            trail_distances.push(current_distance);
+            trail_dict[trail.name] = {"score": ((parseFloat(trail.rating.split(" ")[0])/5.0) * 0.3) + (difficultyMultiplier(trail.difficulty)), 
+                                        "latitude": trail.latitude, "longitude": trail.longitude, "difficulty": trail.difficulty}; // Give each trail a score based on its rating
+            if (current_distance < closest_distance) {
+                closest_distance = current_distance;
+            }
+            console.log(calculateClosestTrail(trail.latitude, trail.longitude, latitude, longitude), trail.name, trail.rating, 
+                    ((parseFloat(trail.rating.split(" ")[0])/5.0) * 0.3) + (difficultyMultiplier(trail.difficulty)), trail.difficulty);
         }
-        console.log(calculateClosestTrail(trail.latitude, trail.longitude, latitude, longitude), trail.name, trail.rating, (parseFloat(trail.rating.split(" ")[0])/5.0), trail.difficulty);
     })
 
     let index = 0;
     Object.keys(trail_dict).forEach(function(key) {
         trail_dict[key].score += 1/(trail_distances[index++] / closest_distance) * 0.5;
+        trail_dict[key].score -= current_user.trails_visited.get(key) * .02;
+        console.log(key, " + ", trail_dict[key].score);
+        // console.log("Start here ", key, trail_dict[key].score);
     })
 
     // convert dict to array
@@ -72,48 +89,70 @@ function calculateRec(trails, num_of_results, latitude, longitude) {
         return item2[1].score - item1[1].score;
     })
 
-    console.log(trail_distances);
-    console.log(trail_scores.slice(0,num_of_results));
-    // console.log(trails[trail_scores.indexOf(Math.max(...trail_scores))]);
-    // console.log(trail_dict);
-    // for (let index = 0; index < num_of_results; index++) {
-    //     top_trails.push(trail_scores[index][0]);
-        
-    // }
+    // console.log(trail_distances);
+    // console.log(trail_scores.slice(0,num_of_results));
 
     return trail_scores.slice(0, num_of_results);
-    // return trail_scores.slice(0,5);
-    // return trails[trail_scores.indexOf(Math.max(...trail_scores))].name;
+}
+
+function initTrailTracker(user, trails) {
+    let difficulty = ["easy", "moderate", "hard"];
+    for (let index = 0; index < difficulty.length; index++) {
+        let value = user.trails_visited.get(difficulty[index]);
+        if (isNaN(value)) {
+            user.trails_visited.set(difficulty[index], 0);
+        }
+    }
+
+    trails.forEach(trail => {
+        let value = user.trails_visited.get(trail.name);
+        if (isNaN(value)) {
+            user.trails_visited.set(trail.name, 0);
+        }
+    })
+}
+
+function updateTrailTracker(user, trails) {
+    trails.forEach(trail => {
+        // console.log(trail[0],"&", trail[1].difficulty);
+        let value = user.trails_visited.get(trail[0]);
+        user.trails_visited.set(trail[0], ++value);
+
+        value = user.trails_visited.get(trail[1].difficulty);
+        user.trails_visited.set(trail[1].difficulty, ++value);
+        
+    })
 }
 
 module.exports = (app) => {
-    app.post("/api/get_recommendation", async (req, res) => {
+    app.post("/api/get_recommendation", async (req, res) => { 
         const { email, latitude, longitude } = req.body;
-        // console.log(email);
-        const user = await User.findOne({email: "jimmyw7@uci.edu"});
-        user.latitude = latitude;
-        user.longitude = longitude; //Data about user is stored here
-        // console.log(user.latitude);
-        // console.log(user.longitude);
+        const user = await User.findOne({email: email}); 
         if (user){
+            // test location: 37.4220656 -122.0840897   TEMPORARY
+            user.latitude = latitude;        
+            user.longitude = longitude; //Data about user is stored here    
             current_user_bmi = calculateBmi(user.weight, user.height);
             if (current_user_bmi.localeCompare("Obesity") == 0 || current_user_bmi.localeCompare("Underweight") == 0) {
                 const trails = await Trail.find({difficulty: "easy"});
-                // console.log(trails);
-                // console.log(trails.length);
-                // console.log(calculateRec(trails));
-                // 37.4220656 -122.0840897
-                res.send(calculateRec(trails, 5, user.latitude, user.longitude))
+                initTrailTracker(user, trails);
+                const result = calculateRec(user, trails, 5, user.latitude, user.longitude);
+                updateTrailTracker(user, result);
+                // console.log(result);
+                res.send(result);
             } else {
                 const trails = await Trail.find({});
-                // console.log(trails);
-                // console.log(trails.length);
-                res.send(calculateRec(trails, 5, user.latitude, user.longitude))
+                initTrailTracker(user, trails);
+                const result = calculateRec(user, trails, 5, user.latitude, user.longitude); 
+                updateTrailTracker(user, result);
+                // console.log(result);
+                res.send(result);
             }
+            // console.log(user.trails_visited);
             await user.save();
+            console.log(user.trails_visited);
             console.log(current_user_bmi);
             console.log(user.name);
-
         }
         else {
             res.send("Error: Can't find user");

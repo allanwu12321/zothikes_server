@@ -12,6 +12,10 @@ const userSchema = new Schema({
     target_weight: String,
     latitude: String,
     longitude: String,
+    trails_visited: {
+        type: Map,
+        of: Number
+    },
 }, {collection: "Users"});
 
 mongoose.model("Users", userSchema);

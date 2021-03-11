@@ -23,7 +23,8 @@ module.exports = (app) => {
                 gender: gender,
                 target_weight: target_weight,
                 latitude: latitude,
-                longitude: longitude
+                longitude: longitude,
+                trails_visited: {},
             }).save();
         }
         else{
